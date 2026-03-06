@@ -1,0 +1,56 @@
+{
+  "name": "Actuator Failure Test",
+  "description": "Test scenario that simulates actuator failures to verify error handling",
+  "initialState": {
+    "ph": 6.0,
+    "ec": 2.0,
+    "temperature": 24,
+    "waterLevel": 70
+  },
+  "events": [
+    {
+      "time": 5,
+      "type": "actuator_command",
+      "target": "water-pump-1",
+      "value": {
+        "active": true
+      }
+    },
+    {
+      "time": 50,
+      "type": "actuator_command",
+      "target": "water-pump-1",
+      "value": {
+        "active": false
+      }
+    },
+    {
+      "time": 100,
+      "type": "actuator_command",
+      "target": "ph-up-pump-1",
+      "value": {
+        "active": true
+      }
+    },
+    {
+      "time": 110,
+      "type": "actuator_command",
+      "target": "ph-up-pump-1",
+      "value": {
+        "active": false
+      }
+    }
+  ],
+  "failures": [
+    {
+      "actuatorId": "water-pump-1",
+      "failureTime": 30,
+      "duration": 60
+    },
+    {
+      "actuatorId": "ph-up-pump-1",
+      "failureTime": 105,
+      "duration": 30
+    }
+  ]
+}

@@ -1,0 +1,159 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://gladys-hydroponic-sim/state.schema.json",
+  "title": "Simulation State",
+  "description": "State persistence schema for the hydroponic test simulation system",
+  "type": "object",
+  "required": ["version", "timestamp", "simulatedTime", "sensors", "actuators", "hydroponicState"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "State format version (semantic versioning)"
+    },
+    "timestamp": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Real-world timestamp when state was saved (Unix epoch milliseconds)"
+    },
+    "simulatedTime": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Simulated time in seconds"
+    },
+    "sensors": {
+      "type": "object",
+      "patternProperties": {
+        "^[a-zA-Z0-9_-]+$": {
+          "$ref": "#/definitions/sensorState"
+        }
+      },
+      "description": "Map of sensor ID to sensor state"
+    },
+    "actuators": {
+      "type": "object",
+      "patternProperties": {
+        "^[a-zA-Z0-9_-]+$": {
+          "$ref": "#/definitions/actuatorState"
+        }
+      },
+      "description": "Map of actuator ID to actuator state"
+    },
+    "hydroponicState": {
+      "type": "object",
+      "required": ["waterVolume", "waterLevel", "temperature", "ph", "ec", "nutrientConcentration", "ambientTemperature", "simulatedTime"],
+      "properties": {
+        "waterVolume": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Water volume in liters"
+        },
+        "waterLevel": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Water level as percentage (0-100)"
+        },
+        "temperature": {
+          "type": "number",
+          "description": "Water temperature in degrees Celsius"
+        },
+        "ph": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 14,
+          "description": "pH value (0-14 scale)"
+        },
+        "ec": {
+          "type": "number",
+          "minimum": 0,
+          "description": "EC value in mS/cm"
+        },
+        "nutrientConcentration": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Nutrient concentration in ppm"
+        },
+        "ambientTemperature": {
+          "type": "number",
+          "description": "Ambient temperature in degrees Celsius"
+        },
+        "simulatedTime": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Simulated time in seconds"
+        }
+      }
+    },
+    "config": {
+      "description": "Simulation configuration (references config.schema.json)"
+    }
+  },
+  "definitions": {
+    "sensorState": {
+      "type": "object",
+      "required": ["type", "baseline", "currentValue", "noiseStdDev"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["ph", "ec", "temperature", "water_level"],
+          "description": "Sensor type"
+        },
+        "baseline": {
+          "type": "number",
+          "description": "Baseline sensor value"
+        },
+        "currentValue": {
+          "type": "number",
+          "description": "Current sensor reading"
+        },
+        "noiseStdDev": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Standard deviation of measurement noise"
+        }
+      }
+    },
+    "actuatorState": {
+      "type": "object",
+      "required": ["type", "state", "totalRuntime", "failed"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["pump", "light", "valve"],
+          "description": "Actuator type"
+        },
+        "state": {
+          "type": "object",
+          "required": ["active", "timestamp"],
+          "properties": {
+            "active": {
+              "type": "boolean",
+              "description": "Whether actuator is currently active"
+            },
+            "intensity": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100,
+              "description": "Intensity for lights (0-100%)"
+            },
+            "timestamp": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Timestamp of last state change"
+            }
+          }
+        },
+        "totalRuntime": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Total runtime in seconds"
+        },
+        "failed": {
+          "type": "boolean",
+          "description": "Whether actuator has failed"
+        }
+      }
+    }
+  }
+}

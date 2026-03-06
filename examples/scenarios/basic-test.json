@@ -1,0 +1,36 @@
+{
+  "name": "Basic Test Scenario",
+  "description": "A simple test scenario demonstrating initial state configuration and basic events",
+  "initialState": {
+    "ph": 6.5,
+    "ec": 1.5,
+    "temperature": 22,
+    "waterLevel": 80
+  },
+  "events": [
+    {
+      "time": 10,
+      "type": "actuator_command",
+      "target": "water-pump-1",
+      "value": {
+        "active": true,
+        "duration": 5
+      }
+    },
+    {
+      "time": 30,
+      "type": "actuator_command",
+      "target": "nutrient-pump-1",
+      "value": {
+        "active": true,
+        "duration": 3
+      }
+    },
+    {
+      "time": 60,
+      "type": "parameter_change",
+      "target": "ambientTemperature",
+      "value": 25
+      }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "name": "Basic Hydroponic Test",
+  "description": "A simple test scenario that exercises basic sensor and actuator functionality",
+  "initialState": {
+    "ph": 6.5,
+    "ec": 1.5,
+    "temperature": 22,
+    "waterLevel": 80
+  },
+  "events": [
+    {
+      "time": 10,
+      "type": "actuator_command",
+      "target": "water-pump-1",
+      "value": {
+        "active": true
+      }
+    },
+    {
+      "time": 20,
+      "type": "actuator_command",
+      "target": "water-pump-1",
+      "value": {
+        "active": false
+      }
+    },
+    {
+      "time": 30,
+      "type": "actuator_command",
+      "target": "grow-light-1",
+      "value": {
+        "active": true,
+        "intensity": 75
+      }
+    },
+    {
+      "time": 100,
+      "type": "actuator_command",
+      "target": "nutrient-pump-1",
+      "value": {
+        "active": true
+      }
+    },
+    {
+      "time": 105,
+      "type": "actuator_command",
+      "target": "nutrient-pump-1",
+      "value": {
+        "active": false
+      }
+    }
+  ]
+}

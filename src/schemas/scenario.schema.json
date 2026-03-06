@@ -1,0 +1,100 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://gladys-hydroponic-sim/scenario.schema.json",
+  "title": "Test Scenario",
+  "description": "Test scenario schema for the hydroponic test simulation system",
+  "type": "object",
+  "required": ["name", "initialState", "events"],
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Scenario name"
+    },
+    "description": {
+      "type": "string",
+      "description": "Scenario description"
+    },
+    "initialState": {
+      "type": "object",
+      "required": ["ph", "ec", "temperature", "waterLevel"],
+      "properties": {
+        "ph": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 14,
+          "description": "Initial pH value (0-14 scale)"
+        },
+        "ec": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 5,
+          "description": "Initial EC value in mS/cm (0-5)"
+        },
+        "temperature": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 50,
+          "description": "Initial temperature in degrees Celsius (0-50)"
+        },
+        "waterLevel": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Initial water level as percentage (0-100)"
+        }
+      }
+    },
+    "events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["time", "type", "target"],
+        "properties": {
+          "time": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Event time in simulated seconds from start"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["actuator_command", "parameter_change", "disturbance"],
+            "description": "Type of event"
+          },
+          "target": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Target component identifier"
+          },
+          "value": {
+            "description": "Event value (type depends on event type)"
+          }
+        }
+      }
+    },
+    "failures": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["actuatorId", "failureTime", "duration"],
+        "properties": {
+          "actuatorId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Actuator identifier to fail"
+          },
+          "failureTime": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Time of failure in simulated seconds"
+          },
+          "duration": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Duration of failure in seconds"
+          }
+        }
+      }
+    }
+  }
+}

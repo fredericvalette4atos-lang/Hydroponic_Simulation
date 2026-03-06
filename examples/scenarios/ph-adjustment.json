@@ -1,0 +1,45 @@
+{
+  "name": "pH Adjustment Scenario",
+  "description": "Test scenario for pH adjustment using pH up/down pumps with monitoring",
+  "initialState": {
+    "ph": 7.5,
+    "ec": 1.8,
+    "temperature": 23,
+    "waterLevel": 85
+  },
+  "events": [
+    {
+      "time": 0,
+      "type": "actuator_command",
+      "target": "ph-down-pump-1",
+      "value": {
+        "active": true,
+        "duration": 2
+      }
+    },
+    {
+      "time": 10,
+      "type": "actuator_command",
+      "target": "ph-down-pump-1",
+      "value": {
+        "active": true,
+        "duration": 2
+      }
+    },
+    {
+      "time": 20,
+      "type": "actuator_command",
+      "target": "ph-down-pump-1",
+      "value": {
+        "active": true,
+        "duration": 1
+      }
+    },
+    {
+      "time": 30,
+      "type": "disturbance",
+      "target": "ph",
+      "value": 0.2
+    }
+  ]
+}

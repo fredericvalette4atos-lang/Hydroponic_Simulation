@@ -1,0 +1,115 @@
+{
+  "name": "Comprehensive System Test",
+  "description": "A comprehensive test scenario demonstrating all simulator features including sensor monitoring, actuator control, nutrient management, and failure simulation",
+  "initialState": {
+    "ph": 6.0,
+    "ec": 1.5,
+    "temperature": 20,
+    "waterLevel": 70
+  },
+  "events": [
+    {
+      "time": 0,
+      "type": "actuator_command",
+      "target": "grow-light-1",
+      "value": {
+        "active": true,
+        "intensity": 80
+      }
+    },
+    {
+      "time": 30,
+      "type": "actuator_command",
+      "target": "water-pump-1",
+      "value": {
+        "active": true
+      }
+    },
+    {
+      "time": 35,
+      "type": "actuator_command",
+      "target": "water-pump-1",
+      "value": {
+        "active": false
+      }
+    },
+    {
+      "time": 60,
+      "type": "actuator_command",
+      "target": "nutrient-pump-1",
+      "value": {
+        "active": true
+      }
+    },
+    {
+      "time": 63,
+      "type": "actuator_command",
+      "target": "nutrient-pump-1",
+      "value": {
+        "active": false
+      }
+    },
+    {
+      "time": 90,
+      "type": "actuator_command",
+      "target": "ph-up-pump-1",
+      "value": {
+        "active": true
+      }
+    },
+    {
+      "time": 92,
+      "type": "actuator_command",
+      "target": "ph-up-pump-1",
+      "value": {
+        "active": false
+      }
+    },
+    {
+      "time": 120,
+      "type": "parameter_change",
+      "target": "ambientTemperature",
+      "value": 25
+    },
+    {
+      "time": 180,
+      "type": "actuator_command",
+      "target": "grow-light-1",
+      "value": {
+        "active": true,
+        "intensity": 100
+      }
+    },
+    {
+      "time": 240,
+      "type": "actuator_command",
+      "target": "drain-valve-1",
+      "value": {
+        "active": true
+      }
+    },
+    {
+      "time": 245,
+      "type": "actuator_command",
+      "target": "drain-valve-1",
+      "value": {
+        "active": false
+      }
+    },
+    {
+      "time": 300,
+      "type": "actuator_command",
+      "target": "grow-light-1",
+      "value": {
+        "active": false
+      }
+    }
+  ],
+  "failures": [
+    {
+      "actuatorId": "water-pump-1",
+      "failureTime": 150,
+      "duration": 30
+    }
+  ]
+}

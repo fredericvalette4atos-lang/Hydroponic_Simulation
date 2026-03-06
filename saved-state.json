@@ -1,0 +1,191 @@
+{
+  "version": "1.0.0",
+  "timestamp": 1772779452399,
+  "simulatedTime": 198.75,
+  "sensors": {
+    "ph-sensor-1": {
+      "type": "ph",
+      "baseline": 7.970086527288152,
+      "currentValue": 7.970086527288152,
+      "noiseStdDev": 0.1
+    },
+    "ec-sensor-1": {
+      "type": "ec",
+      "baseline": 1.8000294251525382,
+      "currentValue": 1.8000294251525382,
+      "noiseStdDev": 0.1
+    },
+    "temp-sensor-1": {
+      "type": "temperature",
+      "baseline": 21.99999628750423,
+      "currentValue": 21.99999628750423,
+      "noiseStdDev": 0.1
+    },
+    "water-level-sensor-1": {
+      "type": "water_level",
+      "baseline": 79.98473333331981,
+      "currentValue": 79.98473333331981,
+      "noiseStdDev": 0.1
+    }
+  },
+  "actuators": {
+    "water-pump-1": {
+      "type": "pump",
+      "state": {
+        "active": false,
+        "timestamp": 1772779253654
+      },
+      "totalRuntime": 0,
+      "failed": false
+    },
+    "nutrient-pump-1": {
+      "type": "pump",
+      "state": {
+        "active": false,
+        "timestamp": 1772779253654
+      },
+      "totalRuntime": 0,
+      "failed": false
+    },
+    "ph-up-pump-1": {
+      "type": "pump",
+      "state": {
+        "active": false,
+        "timestamp": 1772779253655
+      },
+      "totalRuntime": 0,
+      "failed": false
+    },
+    "ph-down-pump-1": {
+      "type": "pump",
+      "state": {
+        "active": false,
+        "timestamp": 1772779253656
+      },
+      "totalRuntime": 0,
+      "failed": false
+    },
+    "grow-light-1": {
+      "type": "light",
+      "state": {
+        "active": false,
+        "intensity": 0,
+        "timestamp": 1772779253656
+      },
+      "totalRuntime": 0,
+      "failed": false
+    },
+    "drain-valve-1": {
+      "type": "valve",
+      "state": {
+        "active": false,
+        "timestamp": 1772779253657
+      },
+      "totalRuntime": 0,
+      "failed": false
+    }
+  },
+  "hydroponicState": {
+    "waterVolume": 39.992366666659905,
+    "waterLevel": 79.98473333331981,
+    "temperature": 22,
+    "ph": 7.9700898148147745,
+    "ec": 1.8000294251525382,
+    "nutrientConcentration": 1152.0188320976245,
+    "ambientTemperature": 22,
+    "simulatedTime": 183.19999999999388
+  },
+  "config": {
+    "reservoir": {
+      "capacity": 50,
+      "initialWaterLevel": 80
+    },
+    "sensors": {
+      "ph": {
+        "noiseStdDev": 0.1,
+        "driftRate": 0.05,
+        "id": "ph-sensor-1",
+        "baseline": 6.5
+      },
+      "ec": {
+        "noiseStdDev": 0.05,
+        "driftRate": 0.02,
+        "id": "ec-sensor-1",
+        "baseline": 1.8
+      },
+      "temperature": {
+        "noiseStdDev": 0.2,
+        "driftRate": 0.1,
+        "id": "temp-sensor-1",
+        "baseline": 22
+      },
+      "waterLevel": {
+        "noiseStdDev": 1,
+        "driftRate": 0,
+        "id": "water-level-sensor-1",
+        "baseline": 80
+      }
+    },
+    "actuators": {
+      "pumps": [
+        {
+          "id": "water-pump-1",
+          "type": "water",
+          "flowRate": 2,
+          "failureProbability": 0.001
+        },
+        {
+          "id": "nutrient-pump-1",
+          "type": "nutrient",
+          "flowRate": 0.5,
+          "failureProbability": 0.001
+        },
+        {
+          "id": "ph-up-pump-1",
+          "type": "ph_up",
+          "flowRate": 0.1,
+          "failureProbability": 0.001
+        },
+        {
+          "id": "ph-down-pump-1",
+          "type": "ph_down",
+          "flowRate": 0.1,
+          "failureProbability": 0.001
+        }
+      ],
+      "lights": [
+        {
+          "id": "grow-light-1",
+          "type": "led",
+          "failureProbability": 0.0005
+        }
+      ],
+      "valves": [
+        {
+          "id": "drain-valve-1",
+          "type": "drain",
+          "flowRate": 5,
+          "failureProbability": 0
+        }
+      ]
+    },
+    "physics": {
+      "evaporationRate": 0.1,
+      "plantUptakeRate": 0.05,
+      "nutrientUptakeRate": 5,
+      "ambientTemperature": 22,
+      "temperatureDriftRate": 0.5,
+      "phDriftRate": 0.1,
+      "bufferCapacity": 0.3
+    },
+    "simulation": {
+      "tickRate": 10,
+      "timeAcceleration": 1
+    },
+    "logging": {
+      "level": "info",
+      "filepath": "./logs/simulation.log",
+      "rotationPolicy": "daily"
+    }
+  }
+}

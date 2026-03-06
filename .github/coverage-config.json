@@ -1,0 +1,28 @@
+{
+  "coverage": {
+    "minimum": 100,
+    "thresholds": {
+      "statements": 100,
+      "branches": 100,
+      "functions": 100,
+      "lines": 100
+    },
+    "failOnDecrease": true,
+    "requireNewCodeCoverage": true,
+    "excludePatterns": [
+      "**/*.d.ts",
+      "**/index.ts"
+    ]
+  },
+  "codecov": {
+    "enabled": true,
+    "failOnError": true,
+    "requireCoverage": true,
+    "minimumCoverage": 100
+  },
+  "reporting": {
+    "generateBadge": true,
+    "commentOnPR": true,
+    "failOnThresholdMiss": true
+  }
+}

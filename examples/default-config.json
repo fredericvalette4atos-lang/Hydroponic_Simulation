@@ -1,0 +1,93 @@
+{
+  "reservoir": {
+    "capacity": 50,
+    "initialWaterLevel": 80
+  },
+  "sensors": {
+    "ph": {
+      "id": "ph-sensor-1",
+      "baseline": 6.5,
+      "noiseStdDev": 0.1,
+      "driftRate": 0.05
+    },
+    "ec": {
+      "id": "ec-sensor-1",
+      "baseline": 1.8,
+      "noiseStdDev": 0.05,
+      "driftRate": 0.02
+    },
+    "temperature": {
+      "id": "temp-sensor-1",
+      "baseline": 22,
+      "noiseStdDev": 0.2,
+      "driftRate": 0.1
+    },
+    "waterLevel": {
+      "id": "water-level-sensor-1",
+      "baseline": 80,
+      "noiseStdDev": 1.0,
+      "driftRate": 0.0
+    }
+  },
+  "actuators": {
+    "pumps": [
+      {
+        "id": "water-pump-1",
+        "type": "water",
+        "flowRate": 2.0,
+        "failureProbability": 0.001
+      },
+      {
+        "id": "nutrient-pump-1",
+        "type": "nutrient",
+        "flowRate": 0.5,
+        "failureProbability": 0.001
+      },
+      {
+        "id": "ph-up-pump-1",
+        "type": "ph_up",
+        "flowRate": 0.1,
+        "failureProbability": 0.001
+      },
+      {
+        "id": "ph-down-pump-1",
+        "type": "ph_down",
+        "flowRate": 0.1,
+        "failureProbability": 0.001
+      }
+    ],
+    "lights": [
+      {
+        "id": "grow-light-1",
+        "type": "led",
+        "failureProbability": 0.0005
+      }
+    ],
+    "valves": [
+      {
+        "id": "drain-valve-1",
+        "type": "drain",
+        "flowRate": 5.0,
+        "failureProbability": 0.0
+      }
+    ]
+  },
+  "physics": {
+    "evaporationRate": 0.1,
+    "plantUptakeRate": 0.05,
+    "nutrientUptakeRate": 5,
+    "ambientTemperature": 22,
+    "temperatureDriftRate": 0.5,
+    "phDriftRate": 0.1,
+    "bufferCapacity": 0.3
+  },
+  "simulation": {
+    "tickRate": 10,
+    "timeAcceleration": 1
+  },
+  "logging": {
+    "level": "info",
+    "filepath": "./logs/simulation.log",
+    "rotationPolicy": "daily"
+  }
+}

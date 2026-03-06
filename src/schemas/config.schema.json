@@ -1,0 +1,184 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://gladys-hydroponic-sim/config.schema.json",
+  "title": "Simulation Configuration",
+  "description": "Configuration schema for the hydroponic test simulation system",
+  "type": "object",
+  "required": ["reservoir", "sensors", "actuators", "physics"],
+  "properties": {
+    "reservoir": {
+      "type": "object",
+      "required": ["capacity", "initialWaterLevel"],
+      "properties": {
+        "capacity": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Reservoir capacity in liters"
+        },
+        "initialWaterLevel": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Initial water level as percentage (0-100)"
+        }
+      }
+    },
+    "sensors": {
+      "type": "object",
+      "properties": {
+        "ph": { "$ref": "#/definitions/sensorConfig" },
+        "ec": { "$ref": "#/definitions/sensorConfig" },
+        "temperature": { "$ref": "#/definitions/sensorConfig" },
+        "waterLevel": { "$ref": "#/definitions/sensorConfig" }
+      }
+    },
+    "actuators": {
+      "type": "object",
+      "properties": {
+        "pumps": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/actuatorConfig" }
+        },
+        "lights": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/actuatorConfig" }
+        },
+        "valves": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/actuatorConfig" }
+        }
+      }
+    },
+    "physics": {
+      "type": "object",
+      "required": ["evaporationRate", "plantUptakeRate", "nutrientUptakeRate", "ambientTemperature", "temperatureDriftRate", "phDriftRate"],
+      "properties": {
+        "evaporationRate": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Water evaporation rate in liters per hour"
+        },
+        "plantUptakeRate": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Plant water uptake rate in liters per hour"
+        },
+        "nutrientUptakeRate": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Plant nutrient uptake rate in ppm per hour"
+        },
+        "ambientTemperature": {
+          "type": "number",
+          "description": "Ambient temperature in degrees Celsius"
+        },
+        "temperatureDriftRate": {
+          "type": "number",
+          "description": "Temperature drift rate in degrees Celsius per hour"
+        },
+        "phDriftRate": {
+          "type": "number",
+          "description": "pH drift rate in pH units per hour"
+        },
+        "bufferCapacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Buffer capacity (0-1) representing resistance to pH changes"
+        }
+      }
+    },
+    "simulation": {
+      "type": "object",
+      "properties": {
+        "tickRate": {
+          "type": "number",
+          "minimum": 1,
+          "description": "Simulation updates per second"
+        },
+        "timeAcceleration": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 1000,
+          "description": "Time acceleration factor (1x-1000x)"
+        }
+      }
+    },
+    "logging": {
+      "type": "object",
+      "properties": {
+        "level": {
+          "type": "string",
+          "enum": ["debug", "info", "warning", "error"],
+          "description": "Minimum log level to record"
+        },
+        "filepath": {
+          "type": "string",
+          "description": "Path to log file"
+        },
+        "rotationPolicy": {
+          "type": "string",
+          "enum": ["daily", "size"],
+          "description": "Log file rotation policy"
+        },
+        "maxSize": {
+          "type": "number",
+          "minimum": 1,
+          "description": "Maximum log file size in MB (for size-based rotation)"
+        }
+      }
+    }
+  },
+  "definitions": {
+    "sensorConfig": {
+      "type": "object",
+      "required": ["id", "baseline"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Unique sensor identifier"
+        },
+        "baseline": {
+          "type": "number",
+          "description": "Baseline sensor value"
+        },
+        "noiseStdDev": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Standard deviation of measurement noise"
+        },
+        "driftRate": {
+          "type": "number",
+          "description": "Sensor drift rate per hour"
+        }
+      }
+    },
+    "actuatorConfig": {
+      "type": "object",
+      "required": ["id", "type", "failureProbability"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Unique actuator identifier"
+        },
+        "type": {
+          "type": "string",
+          "description": "Actuator type (e.g., water, nutrient, ph_up, ph_down for pumps)"
+        },
+        "flowRate": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Flow rate for pumps and valves"
+        },
+        "failureProbability": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "description": "Probability of actuator failure (0.0-1.0)"
+        }
+      }
+    }
+  }
+}

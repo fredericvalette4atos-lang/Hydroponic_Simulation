@@ -1,0 +1,49 @@
+{
+  "name": "Actuator Failure Test Scenario",
+  "description": "Test scenario demonstrating actuator failure conditions during operation",
+  "initialState": {
+    "ph": 6.0,
+    "ec": 1.2,
+    "temperature": 20,
+    "waterLevel": 75
+  },
+  "events": [
+    {
+      "time": 5,
+      "type": "actuator_command",
+      "target": "water-pump-1",
+      "value": {
+        "active": true
+      }
+    },
+    {
+      "time": 15,
+      "type": "actuator_command",
+      "target": "grow-light-1",
+      "value": {
+        "active": true,
+        "intensity": 80
+      }
+    },
+    {
+      "time": 40,
+      "type": "actuator_command",
+      "target": "water-pump-1",
+      "value": {
+        "active": false
+      }
+    }
+  ],
+  "failures": [
+    {
+      "actuatorId": "grow-light-1",
+      "failureTime": 25,
+      "duration": 10
+    },
+    {
+      "actuatorId": "water-pump-1",
+      "failureTime": 35,
+      "duration": 5
+    }
+  ]
+}
