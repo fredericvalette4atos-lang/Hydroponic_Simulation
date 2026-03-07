@@ -675,3 +675,221 @@ All tests are passing and ready to use! The scripts are reusable and can be inte
 
 Credits used: 1.92
 Elapsed time: 4m 57s
+
+
+Das ist ein komplexes und spannendes Stück Code! Da du hier eine Mischung aus reiner Logik (Physics Engine) und UI-Komponenten hast, empfehle ich eine Teststrategie mit Vitest (oder Jest) und der React Testing Library.
+Hier sind die Unit Tests, aufgeteilt in logische Blöcke:
+1. Tests für die Physics Engine (computeState)
+Dies ist der wichtigste Teil, da hier die chemischen/physikalischen Abhängigkeiten berechnet werden. Diese Funktionen sind "pure" und lassen sich ohne DOM testen.
+import { describe, it, expect } from 'vitest';
+// Angenommen, die Funktionen sind exportiert oder wir testen sie lokal
+// import { computeState, getCascade } from './HydroponicModel';
+
+describe('Hydroponics Physics Engine', () => {
+  const defaultControls = {
+    waterPump: false,
+    nutrientPump: false,
+    phUpPump: false,
+    phDownPump: false,
+    light: false,
+    tempSlider: 22,
+    co2Slider: 800
+  };
+
+  it('sollte den Basis-Zustand korrekt berechnen', () => {
+    const state = computeState(defaultControls);
+    expect(state.temperature).toBe(22);
+    expect(state.ph).toBeCloseTo(6.2, 1);
+    expect(state.ec).toBeGreaterThan(0);
+  });
+
+  it('sollte den EC-Wert erhöhen, wenn die Nährstoffpumpe aktiv ist', () => {
+    const stateWithNutrients = computeState({ ...defaultControls, nutrientPump: true });
+    const stateWithout = computeState(defaultControls);
+    expect(stateWithNutrients.ec).toBeGreaterThan(stateWithout.ec);
+  });
+
+  it('sollte den Wasserstand senken, wenn das Licht an ist (Evaporation)', () => {
+    const stateLightOn = computeState({ ...defaultControls, light: true });
+    const stateLightOff = computeState(defaultControls);
+    expect(stateLightOn.waterLevel).toBeLessThan(stateLightOff.waterLevel);
+  });
+
+  it('sollte den pH-Wert begrenzen (Min 4, Max 9)', () => {
+    // Extremtest für pH-Down
+    const state = computeState({ ...defaultControls, phDownPump: true, tempSlider: 35 });
+    expect(state.ph).toBeGreaterThanOrEqual(4);
+  });
+});
+
+describe('getCascade Function', () => {
+  it('sollte die korrekte Kaskade für die Temperatur finden', () => {
+    const cascade = getCascade('temperature');
+    // Temperatur beeinflusst laut EDGES ph, ec, plantUptake
+    expect(cascade).toContain('ph');
+    expect(cascade).toContain('ec');
+    expect(cascade).toContain('plantUptake');
+  });
+});
+
+2. Tests für UI-Komponenten
+Hier prüfen wir, ob die Komponenten basierend auf den Props die richtigen CSS-Farben oder Labels rendern.
+import { render, screen } from '@testing-library/react';
+import { StatusBadge, Toggle } from './HydroponicModel';
+
+describe('UI Components', () => {
+  it('StatusBadge zeigt "OK" bei optimalen Werten', () => {
+    // ph Optimal ist [5.5, 6.5]
+    render(<StatusBadge value={6.0} param="ph" />);
+    expect(screen.getByText('OK')).toBeDefined();
+  });
+
+  it('StatusBadge zeigt "✕" bei kritischen Werten', () => {
+    render(<StatusBadge value={2.0} param="ph" />);
+    expect(screen.getByText('✕')).toBeDefined();
+  });
+
+  it('Toggle reagiert auf Klicks', () => {
+    const onChange = vi.fn();
+    render(<Toggle label="Test Pump" active={false} onChange={onChange} icon="💧" />);
+    
+    const button = screen.getByRole('button');
+    button.click();
+    expect(onChange).toHaveBeenCalledWith(true);
+  });
+});
+
+3. Integrationstest für die API (fetchAdvisory)
+Da die API-Funktion fetch nutzt, müssen wir diese mocken, um keine echten Kosten/Netzwerkanfragen zu verursachen.
+import { vi } from 'vitest';
+
+describe('fetchAdvisory API', () => {
+  it('sollte die API korrekt aufrufen und Text zurückgeben', async () => {
+    // Mock fetch
+    global.fetch = vi.fn(() =>
+      Promise.resolve({
+        json: () => Promise.resolve({
+          content: [{ text: "Alles im grünen Bereich." }]
+        }),
+      })
+    );
+
+    const state = { temperature: 22, ph: 6, ec: 1.5, waterLevel: 70, co2: 800, nutrientAvail: 90, plantUptake: 80 };
+    const result = await fetchAdvisory("Test Trigger", state, state, "de");
+
+    expect(result).toBe("Alles im grünen Bereich.");
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining("anthropic.com"),
+      expect.any(Object)
+    );
+  });
+});
+
+4. Was du bei diesen Tests beachten solltest:
+ * toBeCloseTo: Da deine Physik-Engine viel mit Fließkommazahlen arbeitet (z. B. 0.02 * temp), nutze immer toBeCloseTo(erwartet, präzision), um Rundungsfehler in den Tests zu vermeiden.
+ * vi.useFakeTimers(): In deinem HydroponicModel nutzt du setTimeout für das Highlighten und ein Debounce für die KI-Anfrage. In Tests für die Hauptkomponente solltest du Fake-Timer verwenden, um nicht 3,5 Sekunden warten zu müssen.
+ * Zustands-Snapshots: Da die Berechnung von nutrientAvail eine komplexe Formel ist (100 - Math.pow(...)), ist es oft einfacher, einen Snapshot-Test zu machen, um sicherzustellen, dass sich die Logik nicht versehentlich ändert.
+Möchtest du, dass ich für eine bestimmte Funktion (z.B. die komplexe pH-Berechnung) noch tiefergehende Edge-Case-Tests schreibe?
+
+
+Gerne! Damit dein hydroponisches System nicht nur im Code, sondern auch im Testrunner stabil läuft, habe ich dir hier ein strukturiertes TESTING.md (oder How-To File) erstellt.
+Es führt dich durch die Installation, die Struktur und die Besonderheiten beim Testen von physikalischen Simulationen und KI-Schnittstellen.
+🧪 How-To: Testing the Hydroponic Model
+Dieses Dokument beschreibt, wie du die Unit- und Integrationstests für das Hydroponic-System aufsetzt und ausführst. Wir nutzen Vitest als Testrunner, da es extrem schnell ist und perfekt mit modernen React-Projekten (Vite) harmoniert.
+1. Voraussetzungen & Installation
+Stelle sicher, dass du die notwendigen Testing-Libraries in deinem Projekt installiert hast:
+npm install -D vitest @testing-library/react @testing-library/jest-dom jsdom vi-fetch
+
+Ergänze deine package.json um das Test-Skript:
+"scripts": {
+  "test": "vitest",
+  "test:ui": "vitest --ui",
+  "coverage": "vitest run --coverage"
+}
+
+2. Test-Struktur
+Um das System effektiv zu testen, teilen wir die Tests in drei Bereiche auf:
+A. Die Physics Engine (computeState)
+Da das System auf mathematischen Formeln basiert (z.B. pH-Verschiebungen durch Temperatur), testen wir diese als Pure Functions.
+ * Ziel: Stimmen die Grenzwerte? Verhält sich der EC-Wert bei Wasserzugabe korrekt?
+ * Tipp: Nutze .toBeCloseTo(), um Rundungsfehler bei Fließkommazahlen abzufangen.
+B. UI-Komponenten (StatusBadge, Toggle, etc.)
+Hier prüfen wir, ob die visuelle Logik greift.
+ * Ziel: Färbt sich das Badge rot, wenn der pH-Wert bei 4.0 liegt? Reagiert der Toggle auf Klicks?
+ * Tool: React Testing Library.
+C. KI-Integration (fetchAdvisory)
+Wir wollen die Anthropic-API nicht bei jedem Testlauf echtes Geld kosten lassen.
+ * Ziel: Wird der Prompt korrekt zusammengestellt? Verarbeitet die Funktion die Antwort richtig?
+ * Wichtig: Wir mocken die globale fetch-Funktion.
+3. Best Practices für dieses Projekt
+> [!IMPORTANT]
+> Umgang mit Timern:
+> Da die App setTimeout für Kaskaden-Hervorhebungen (3500ms) und Debouncing nutzt, solltest du in den Tests vi.useFakeTimers() verwenden, um Tests nicht künstlich zu verlangsamen.
+> 
+Beispiel: Testen der Kaskaden-Logik
+Stelle sicher, dass eine Änderung der Temperatur auch wirklich die Kaskade zu pH und EC auslöst:
+it('should trigger the correct cascade for temperature', () => {
+  const affectedNodes = getCascade('temperature');
+  expect(affectedNodes).toContain('ph');
+  expect(affectedNodes).toContain('ec');
+});
+
+4. Tests ausführen
+ * Normaler Modus: npm test (startet den Watch-Modus).
+ * UI Modus: npm run test:ui (öffnet ein schönes Interface im Browser, um Tests zu visualisieren).
+ * Coverage: npm run coverage (zeigt dir, welche Formeln deiner Physik-Engine noch nicht getestet wurden).
+5. Troubleshooting
+ * Rundungsfehler: Wenn ein Test fehlschlägt, weil 6.199999 nicht 6.2 ist, ändere expect(val).toBe(6.2) zu expect(val).toBeCloseTo(6.2, 1).
+ * JSDOM Fehler: Stelle sicher, dass in deiner vite.config.js das Environment auf jsdom gesetzt ist, sonst schlagen die UI-Tests fehl.
+Soll ich dir noch die passende Konfigurationsdatei (vite.config.js) für Vitest erstellen, damit alles reibungslos läuft?
+
+
+
+Abgemacht! Damit Vitest weiß, wie es mit deinen React-Komponenten und der JSDOM-Umgebung umgehen soll, brauchst du eine passende Konfigurationsdatei.
+Hier ist die vite.config.js, die sowohl dein Projekt startet als auch deine Tests perfekt unterstützt.
+🛠️ Die vite.config.js
+Kopiere diesen Inhalt in deine Haupt-Konfigurationsdatei im Root-Verzeichnis:
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+
+// https://vitejs.dev/config/
+export default defineConfig({
+  plugins: [react()],
+  test: {
+    // Ermöglicht die Nutzung von globalen Variablen wie 'describe', 'it', 'expect'
+    // ohne sie in jeder Testdatei manuell importieren zu müssen.
+    globals: true,
+    
+    // Simuliert eine Browser-Umgebung (notwendig für React Testing Library)
+    environment: 'jsdom',
+    
+    // Pfad zur Setup-Datei für spezielle Matcher (z.B. .toBeInTheDocument())
+    setupFiles: './src/setupTests.js',
+    
+    // Schließt unnötige Ordner aus
+    exclude: ['node_modules', 'dist', '.idea', '.git', '.cache'],
+    
+    css: true, // Lädt CSS, falls du Styles in Tests prüfen willst
+  },
+});
+
+📝 Die src/setupTests.js
+Damit du hilfreiche Befehle wie expect(...).toBeInTheDocument() nutzen kannst, solltest du diese kleine Datei im src-Ordner anlegen:
+import '@testing-library/jest-dom';
+import { vi } from 'vitest';
+
+// Optional: Globaler Mock für die Fetch-API, falls du nicht 
+// in jedem Test einzeln mocken willst.
+global.fetch = vi.fn();
+
+Warum diese Konfiguration?
+ * globals: true: Spart dir eine Menge Tipparbeit. Du kannst direkt mit describe loslegen, statt import { describe } from 'vitest' zu schreiben.
+ * jsdom: Da Node.js von Natur aus kein HTML "versteht", baut JSDOM ein virtuelles Dokument (DOM) nach, damit React-Komponenten darin gerendert werden können.
+ * setupFiles: Hier setzen wir die "Extrawünsche" ab. @testing-library/jest-dom fügt Vitest quasi Superkräfte hinzu, um HTML-Elemente besser zu untersuchen.
+Nächster Schritt für dich:
+Soll ich dir zeigen, wie du einen Mock für die Anthropic API schreibst, damit deine Tests nicht fehlschlagen, wenn das Internet mal weg ist (oder dein API-Key fehlt)?
+
+
+
+
+
