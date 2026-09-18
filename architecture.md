@@ -1,310 +1,310 @@
 # Hydroponic Test Simulation — Architecture
 
-## 1. Purpose and scope
+## 1. Zweck und Umfang
 
-Hydroponic Test Simulation is a TypeScript-based simulator for testing hydroponic monitoring and control workflows, including integration with the Gladys home-automation ecosystem.
+Hydroponic Test Simulation ist ein TypeScript-basierter Simulator zum Testen von Überwachungs- und Steuerungsabläufen für hydroponische Systeme sowie der Integration in die Gladys-Hausautomation.
 
-The application models a hydroponic installation in simulated time and exposes its state through a REST API. It provides:
+Die Anwendung simuliert Sensoren, Aktoren, Physik und Chemie in beschleunigter Simulationszeit und stellt den aktuellen Zustand über eine REST-API bereit. Unterstützt werden unter anderem:
 
-- configurable sensors for pH, electrical conductivity (EC), temperature, and water level;
-- controllable pumps, lights, and valves;
-- hydroponic physics and water-chemistry calculations;
-- accelerated time for long-running scenarios;
-- scenario loading and state persistence;
-- Gladys-compatible device discovery and commands;
-- Swagger/OpenAPI documentation;
-- a browser dashboard and interface test scripts.
+- pH-, EC-, Temperatur- und Wasserstandssensoren;
+- Wasser-, Nährstoff- und pH-Pumpen, Lampen und Ventile;
+- Physik- und Chemie-Modelle für Verdunstung, Pflanzenaufnahme, Nährstoffkonzentration und pH-Pufferung;
+- Szenarien, Fehlerfälle und persistierter Zustand;
+- Gladys-kompatible Geräteerkennung und Aktorbefehle;
+- Swagger/OpenAPI-Dokumentation;
+- Dashboard- und Interface-Tests.
 
-The repository also contains `Hydro_Model.jsx`, an interactive dependency-graph prototype. It visualizes relationships between temperature, pH, EC, water level, CO₂, nutrient availability, and plant uptake. The production simulator described below is implemented under `src/`.
+`Hydro_Model.jsx` ist ein separates interaktives Visualisierungs- und Prototyping-Modell. Es zeigt Abhängigkeiten zwischen Temperatur, pH, EC, Wasserstand, CO₂, Nährstoffverfügbarkeit und Pflanzenaufnahme.
 
-## 2. Architectural style
+## 2. Rollen und Verantwortlichkeiten
 
-The project follows a modular, layered architecture centered on a deterministic simulation core:
-
-```text
-External clients
-    │
-    ├── Gladys integration adapter
-    ├── Dashboard / browser clients
-    ├── CLI and automated test clients
-    └── Scenario and control scripts
-    │
-    ▼
-REST API + OpenAPI/Swagger
-    │
-    ▼
-Simulation core
-    ├── Time management
-    ├── Event logging
-    ├── State persistence
-    └── Simulation orchestration
-    │
-    ├── Sensors
-    ├── Actuators
-    └── Physics and chemistry models
-    │
-    ▼
-Validated configuration, scenarios, and simulated state
-```
-
-The layers communicate through TypeScript types and domain objects rather than through a database or message broker. Runtime state is held in memory and can be serialized to JSON when persistence is requested.
-
-## 3. Runtime components
-
-### 3.1 Application entry point
-
-- **`src/main.ts`** is the executable entry point.
-- It loads command-line options and configuration, constructs the simulation components, starts the simulation lifecycle, and starts the HTTP server.
-- The compiled executable is `dist/main.js` and is exposed through the `hydroponic-sim` package binary.
-
-### 3.2 Simulation core
-
-The core coordinates the simulation and is the main application boundary for the domain model.
-
-- **`src/core/simulation-core.ts`** orchestrates ticks, state transitions, sensors, actuators, physics, scenarios, and lifecycle operations such as start, stop, pause, and resume.
-- **`src/core/time-manager.ts`** translates real elapsed time into simulated time and applies the configured acceleration factor.
-- **`src/core/event-logger.ts`** records simulation events and operational messages using the configured logging policy.
-- **`src/core/state-persistence.ts`** serializes and restores simulator state from JSON files.
-
-A simulation tick applies actuator effects and environmental changes, advances simulated time, recalculates the physical state, and updates sensor readings. The time manager allows the same model to run at normal speed or at an accelerated rate of up to 1000×, according to configuration.
-
-### 3.3 Physics and chemistry
-
-The physics layer represents the system dynamics independently of HTTP and presentation concerns.
-
-- **`src/physics/hydroponic-physics-model.ts`** models time-dependent effects such as evaporation, plant water uptake, temperature drift, and actuator influence.
-- **`src/physics/chemistry-model.ts`** models pH, nutrient concentration, EC, buffering, and related chemical relationships.
-
-The models consume configuration and current actuator state, then produce updated physical values. Keeping these calculations separate from sensors means that sensor noise and drift can be tested independently from the underlying simulated environment.
-
-### 3.4 Sensors
-
-The sensor layer exposes simulated measurements to the rest of the system. It includes implementations for:
-
-- pH;
-- EC;
-- temperature;
-- water level.
-
-Sensors are configured with baseline values and can apply measurement noise and drift. Their public representation contains an identifier, sensor type, value, unit, and timing metadata as appropriate.
-
-### 3.5 Actuators
-
-The actuator layer represents controllable equipment:
-
-- pumps for water, nutrients, and pH adjustment;
-- grow lights;
-- valves.
-
-Actuators validate commands, maintain their current state, and apply their configured effects to the next simulation updates. Failure probabilities and failure scenarios allow integrations to be tested against unavailable or malfunctioning equipment.
-
-### 3.6 REST API
-
-- **`src/api/rest-api-server.ts`** exposes HTTP endpoints for sensors, actuators, simulation lifecycle, configuration, scenarios, and state persistence.
-- **`src/api/swagger.ts`** generates the OpenAPI description and serves Swagger UI.
-
-The API is intended to be stateless at the request level: each request reads or changes the in-memory simulation managed by the core. Responses use a consistent JSON structure with success indicators, data, timestamps, and error information where applicable.
-
-Important endpoint groups include:
-
-| Area | Representative endpoints | Responsibility |
+| Rolle | Verantwortlichkeiten | Typische Schnittstellen |
 |---|---|---|
-| Sensors | `GET /api/sensors`, `GET /api/sensors/:id` | Read current simulated measurements |
-| Actuators | `GET /api/actuators`, `POST /api/actuators/:id` | Inspect equipment and send commands |
-| Simulation | `/api/simulation/status`, `/start`, `/stop`, `/pause`, `/resume` | Control simulation lifecycle |
-| Time | `POST /api/simulation/time-acceleration` | Change simulated-time speed |
-| Configuration | `GET/POST /api/config` and section routes | Read or update configuration |
-| Scenarios | `POST /api/scenario` | Load reproducible test scenarios |
-| Persistence | `POST /api/state/save`, `/api/state/load` | Save or restore state |
+| **Systemadministrator / Betreiber** | Startet und konfiguriert den Simulator, verwaltet Ports, Logdateien und Persistenzdateien. | CLI, JSON-Konfiguration, Logs |
+| **Testentwickler** | Erstellt Tests, Szenarien und Fehlerfälle; prüft deterministische Simulationsergebnisse. | Jest, fast-check, Szenario-API, `tests/` |
+| **Integrationsentwickler** | Integriert den Simulator in Gladys oder andere Automationssysteme. | REST-API, `GladysIntegrationAdapter` |
+| **Dashboard-Benutzer** | Beobachtet Sensorwerte, Systemstatus und Warnungen und steuert Aktoren. | Dashboard, Sensor- und Aktor-Endpunkte |
+| **Szenarioautor** | Definiert Anfangszustände, zeitgesteuerte Ereignisse und Aktorausfälle. | `examples/scenarios/*.json` |
+| **Entwickler / Maintainer** | Erweitert Sensoren, Aktoren, Physikmodelle, API und Dokumentation. | `src/`, Pull Requests, Tests |
+| **Simulationskern** | Führt die Simulation aus, verarbeitet Zeit, Aktoreffekte, Physik, Sensoren und Ereignisse. | Interne TypeScript-Domänenobjekte |
 
-The default server port is `3000`. Swagger UI is available at `/api-docs` and the machine-readable OpenAPI document at `/api-docs.json`.
+Die Rollen sind logisch getrennt: Externe Benutzer und Systeme greifen ausschließlich über die dokumentierten Grenzen zu; der Simulationskern bleibt unabhängig von UI- und Integrationsdetails.
 
-### 3.7 Gladys integration
+## 3. Architekturüberblick
 
-- **`src/integration/gladys-integration-adapter.ts`** maps simulator sensors and actuators to Gladys-compatible devices.
-- It provides device discovery, sensor-value access, and actuator-command translation without coupling the simulation core to Gladys-specific transport concerns.
+Das Projekt verwendet eine modulare, geschichtete Architektur:
 
-This adapter is an anti-corruption boundary: Gladys device identifiers and command formats are translated into the simulator's internal sensor and actuator abstractions.
+```mermaid
+graph TD
+    Admin[Systemadministrator] --> CLI[CLI / Konfiguration]
+    Tester[Testentwickler] --> Tests[Jest / fast-check / Interface-Tests]
+    User[Dashboard-Benutzer] --> Dashboard[Browser-Dashboard]
+    Gladys[Gladys / externe Automatisierung] --> Adapter[Gladys Integration Adapter]
+    Scenario[Szenarioautor] --> ScenarioFiles[JSON-Szenarien]
 
-## 4. Configuration and data flow
+    CLI --> API[Express REST API]
+    Dashboard --> API
+    Adapter --> Core[Simulation Core]
+    API --> Core
+    ScenarioFiles --> Config[Configuration & Scenario Loader]
+    Config --> Core
+    Tests --> API
+    Tests --> Core
 
-Configuration is loaded from JSON and validated before it is used by the simulator.
+    API --> Swagger[Swagger / OpenAPI]
+    Core --> Time[Time Manager]
+    Core --> Actuators[Aktoren]
+    Core --> Physics[Hydroponic Physics Model]
+    Core --> Chemistry[Chemistry Model]
+    Physics --> State[Simulierter Systemzustand]
+    Chemistry --> State
+    State --> Sensors[Sensoren]
+    Sensors --> Core
+    Core --> Logger[Event Logger]
+    Core --> Persistence[State Persistence]
+    Persistence --> Files[(JSON-Dateien)]
 
-- **`src/config/configuration-loader.ts`** loads and merges configuration.
-- **`src/config/scenario-loader.ts`** loads initial conditions, timed events, and failure definitions.
-- **`src/schemas/`** contains the schemas used to describe valid configuration and scenario structures.
-- **`src/utils/schema-validator.ts`** performs schema validation with AJV.
-- **`src/utils/noise-generator.ts`** supplies configurable sensor noise.
-
-The main configuration sections are:
-
-```text
-reservoir     → capacity and initial water level
-sensors       → baselines, noise, drift, identifiers
-actuators     → pumps, lights, valves, rates, failure behavior
-physics       → evaporation, uptake, temperature, pH, buffering
-simulation    → tick rate and time acceleration
-logging       → level, output path, and rotation policy
+    classDef external fill:#e8f1ff,stroke:#2563eb,color:#111827;
+    classDef application fill:#ecfdf5,stroke:#059669,color:#111827;
+    classDef domain fill:#fff7ed,stroke:#ea580c,color:#111827;
+    classDef storage fill:#f3e8ff,stroke:#9333ea,color:#111827;
+    class Admin,Tester,User,Gladys,Scenario external;
+    class API,Dashboard,Adapter,CLI,Config,Swagger,Tests application;
+    class Core,Time,Actuators,Physics,Chemistry,State,Sensors,Logger,Persistence domain;
+    class ScenarioFiles,Files storage;
 ```
 
-### Normal simulation flow
+### Schichten
 
-1. The application loads and validates configuration.
-2. The core initializes the physical state, sensors, and actuators.
-3. The time manager schedules simulation ticks.
-4. Actuator commands and scenario events are applied.
-5. Physics and chemistry models calculate the next state.
-6. Sensors derive readings, including configured noise and drift.
-7. Events are logged and the state remains available to API clients.
-8. Clients poll the REST API or use the Gladys adapter to observe and control the system.
+1. **Externe Schicht:** Dashboard, Gladys, CLI, Testclients und Szenario-Dateien.
+2. **API- und Adapter-Schicht:** Express REST API, Swagger und Gladys-Adapter.
+3. **Simulationskern:** Lebenszyklus, Taktung, Ereignisse, Persistenz und Orchestrierung.
+4. **Domänenschicht:** Sensoren, Aktoren, Physik- und Chemie-Modelle.
+5. **Konfigurations- und Dateischicht:** JSON-Konfiguration, Szenarien, gespeicherter Zustand und Logs.
 
-### Control-command flow
+Der Laufzeitzustand wird im Speicher gehalten. Ein externer Datenbank- oder Message-Broker ist nicht erforderlich.
 
-```text
-Client
-  │ POST /api/actuators/:id
-  ▼
-REST API validation
-  ▼
-Actuator registry / simulation core
-  ▼
-Updated actuator state
-  ▼
-Next simulation tick
-  ▼
-Physics + chemistry recalculation
-  ▼
-Sensor readings and API responses
+## 4. Wichtige Komponenten
+
+### Einstiegspunkt
+
+`src/main.ts` verarbeitet CLI-Optionen, lädt die Konfiguration, erstellt die Simulationskomponenten und startet Simulation sowie HTTP-Server. Der kompilierte Einstiegspunkt ist `dist/main.js`.
+
+### Simulationskern
+
+- `src/core/simulation-core.ts` orchestriert Ticks, Zustandsänderungen, Sensoren, Aktoren, Physik, Szenarien und Lebenszyklusoperationen.
+- `src/core/time-manager.ts` wandelt reale Zeit in Simulationszeit um und unterstützt Zeitbeschleunigung.
+- `src/core/event-logger.ts` protokolliert relevante Simulations- und Systemereignisse.
+- `src/core/state-persistence.ts` speichert und lädt den Zustand als JSON.
+
+### Physik und Chemie
+
+- `src/physics/hydroponic-physics-model.ts` modelliert Wasserbewegung, Verdunstung, Pflanzenaufnahme, Temperatur und Aktoreinflüsse.
+- `src/physics/chemistry-model.ts` modelliert pH, EC, Nährstoffkonzentration und Pufferung.
+
+### Sensoren und Aktoren
+
+Sensoren lesen den physikalischen Zustand und können konfigurierbares Rauschen und Drift anwenden. Aktoren validieren Befehle, halten ihren Zustand und erzeugen `PhysicsEffect`-Werte für den nächsten Simulationsschritt.
+
+### REST API und Gladys
+
+- `src/api/rest-api-server.ts` stellt Sensor-, Aktor-, Simulations-, Konfigurations-, Szenario- und Persistenz-Endpunkte bereit.
+- `src/api/swagger.ts` generiert die OpenAPI-Beschreibung und Swagger UI.
+- `src/integration/gladys-integration-adapter.ts` übersetzt Gladys-Geräte- und Befehlsformate in interne Sensor- und Aktoroperationen.
+
+Wichtige Endpunktgruppen:
+
+| Bereich | Beispiele | Zweck |
+|---|---|---|
+| Sensoren | `GET /api/sensors`, `GET /api/sensors/:id` | Messwerte lesen |
+| Aktoren | `GET /api/actuators`, `POST /api/actuators/:id` | Aktoren auslesen und steuern |
+| Simulation | `/api/simulation/status`, `/start`, `/stop`, `/pause`, `/resume` | Lebenszyklus steuern |
+| Zeit | `POST /api/simulation/time-acceleration` | Zeitfaktor ändern |
+| Konfiguration | `GET/POST /api/config` | Konfiguration lesen und aktualisieren |
+| Szenarien | `POST /api/scenario` | Szenario laden |
+| Persistenz | `POST /api/state/save`, `/api/state/load` | Zustand speichern/laden |
+
+Standardmäßig läuft der Server auf Port `3000`. Swagger UI ist unter `/api-docs` verfügbar.
+
+## 5. Simulationsablauf
+
+```mermaid
+graph TD
+    A[Simulation starten] --> B[Time Manager: Delta berechnen]
+    B --> C[Simulationszeit fortschreiben]
+    C --> D[Szenarioereignisse anwenden]
+    D --> E[Aktoreffekte sammeln]
+    E --> F[Physikmodell aktualisieren]
+    F --> G[Chemiemodell aktualisieren]
+    G --> H[Sensoren aus Systemzustand aktualisieren]
+    H --> I[Ereignisse protokollieren]
+    I --> J{Simulation läuft?}
+    J -->|Ja| B
+    J -->|Nein| K[Simulation beenden]
 ```
 
-## 5. Scenario execution and persistence
+Die Zeitbeschleunigung skaliert das simulierte Delta, ohne notwendigerweise die externe API-Frequenz zu verändern:
 
-A scenario is a reproducible test definition containing:
+```text
+simuliertes Delta = reales Delta × Zeitbeschleunigungsfaktor
+```
 
-- a name and description;
-- initial sensor or environmental values;
-- events scheduled at simulated times;
-- optional actuator failure windows.
+## 6. Sequenzdiagramm: Aktorbefehl und Messwert
 
-The scenario loader passes these definitions to the simulation core. Because events are expressed in simulated time, the same scenario can be run at different acceleration factors without changing its logical behavior.
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Benutzer as Dashboard-Benutzer
+    participant API as REST API
+    participant Core as Simulation Core
+    participant Aktor as Aktor
+    participant Time as Time Manager
+    participant Physik as Physik/Chemie
+    participant Sensor as Sensor
 
-State persistence writes the current simulation state to JSON. Loading a state restores the state needed to continue a test, including simulated time, equipment state, sensor values, and relevant runtime configuration.
+    Benutzer->>API: POST /api/actuators/water-pump-1 {state:true}
+    API->>API: Request validieren
+    API->>Core: Aktor anhand ID suchen
+    Core-->>API: Aktorinstanz
+    API->>Aktor: setState(active=true)
+    Aktor-->>API: Neuer Aktorzustand
+    API-->>Benutzer: 200 OK / JSON
 
-## 6. User interfaces and clients
+    loop Jeder Simulations-Tick
+        Core->>Time: advance()
+        Time-->>Core: simuliertes Delta
+        Core->>Aktor: getEffect(delta)
+        Aktor-->>Core: Wasserzufuhr-Effekt
+        Core->>Physik: update(delta, effects)
+        Physik->>Physik: Wasserstand, EC und pH berechnen
+        Physik-->>Core: Aktualisierter Systemzustand
+        Core->>Sensor: updateFromPhysics(state)
+        Sensor->>Sensor: Rauschen und Drift anwenden
+        Sensor-->>Core: Neuer Messwert
+    end
 
-### Dashboard
+    Benutzer->>API: GET /api/sensors/water-level-sensor-1
+    API->>Core: Sensor suchen
+    Core->>Sensor: getValue()
+    Sensor-->>API: Aktueller Wasserstand
+    API-->>Benutzer: JSON mit Messwert und Timestamp
+```
 
-The example dashboard communicates with the REST API using HTTP polling. Its typical update cycle is:
+## 7. Sequenzdiagramm: Szenario und Persistenz
 
-1. fetch sensor values and simulation status;
-2. calculate display and health indicators;
-3. render readings and alerts;
-4. send actuator or simulation-control commands in response to user actions.
+```mermaid
+sequenceDiagram
+    actor Tester as Testentwickler
+    participant API as REST API
+    participant Loader as Scenario Loader
+    participant Core as Simulation Core
+    participant File as JSON-Datei
+    participant Validator as Schema Validator
 
-This deliberately avoids requiring a WebSocket server and keeps the dashboard compatible with any HTTP client.
+    Tester->>API: POST /api/scenario
+    API->>Loader: Szenariopfad übergeben
+    Loader->>File: Szenario lesen
+    File-->>Loader: Anfangszustand, Events, Fehler
+    Loader->>Validator: Szenario validieren
+    Validator-->>Loader: Gültig / Fehler
+    Loader->>Core: Szenario laden
+    Core-->>API: Szenario aktiviert
+    API-->>Tester: 200 OK
 
-### Interactive dependency model
+    Tester->>API: POST /api/state/save
+    API->>Core: aktuellen Zustand anfordern
+    Core->>File: Zustand als JSON schreiben
+    File-->>Core: Schreibvorgang abgeschlossen
+    Core-->>API: Speicherstatus
+    API-->>Tester: 200 OK
 
-`Hydro_Model.jsx` is a separate React-style visualization prototype. It contains:
+    Tester->>API: POST /api/state/load
+    API->>File: JSON-Zustand lesen
+    File-->>API: gespeicherter Zustand
+    API->>Validator: Zustand validieren
+    Validator-->>API: Gültig
+    API->>Core: Zustand wiederherstellen
+    Core-->>API: Simulation fortsetzbar
+    API-->>Tester: 200 OK
+```
 
-- parameter definitions and optimal ranges;
-- a dependency graph represented by directed edges;
-- a local physics calculation function;
-- cascade highlighting;
-- status indicators and a system-health score;
-- an optional AI advisory panel that calls the Anthropic API.
+## 8. Konfiguration und Datenfluss
 
-It should be treated as a presentation/prototyping surface rather than as a replacement for the TypeScript simulation engine. If it is integrated into the application, the AI request should be moved behind a server-side API boundary so credentials are not exposed in browser code.
+Die Konfigurationspriorität ist:
 
-## 7. Repository structure
+1. Laufzeitänderungen über die API;
+2. Szenariowerte;
+3. Konfigurationsdatei;
+4. Standardwerte.
+
+Wichtige Bereiche sind `reservoir`, `sensors`, `actuators`, `physics`, `simulation` und `logging`. `src/config/` lädt Konfiguration und Szenarien, `src/schemas/` definiert die Strukturen und `src/utils/schema-validator.ts` validiert sie mit AJV.
+
+## 9. Dashboard und Prototyp
+
+Das Dashboard verwendet HTTP-Polling, um Sensorwerte und Simulationsstatus regelmäßig abzurufen. Benutzeraktionen senden Aktor- und Simulationsbefehle an die REST API.
+
+`Hydro_Model.jsx` enthält zusätzlich eine React-basierte Visualisierung mit Dependency Graph, Kaskadenhervorhebung, Gesundheitswerten und einem optionalen KI-Beratungsbereich. Bei einer produktiven Integration sollte der externe KI-Aufruf über einen serverseitigen Proxy erfolgen, damit API-Schlüssel nicht im Browser liegen.
+
+## 10. Repository-Struktur
 
 ```text
 src/
-├── main.ts                         # Executable application entry point
-├── index.ts                        # Public library exports
-├── types.ts                        # Shared domain types
-├── core/                           # Simulation orchestration and lifecycle
-│   ├── simulation-core.ts
-│   ├── time-manager.ts
-│   ├── event-logger.ts
-│   └── state-persistence.ts
-├── sensors/                        # Sensor implementations
-├── actuators/                      # Pump, light, and valve implementations
-├── physics/                        # Hydroponic physics and chemistry models
-├── integration/                    # Gladys adapter
-├── api/                            # Express REST API and Swagger
-├── config/                         # Configuration and scenario loading
-├── schemas/                        # JSON schemas
-└── utils/                          # Validation and noise utilities
+├── main.ts                         # Anwendungseinstiegspunkt
+├── index.ts                        # Öffentliche Exporte
+├── types.ts                        # Gemeinsame Domänentypen
+├── core/                           # Simulation, Zeit, Logging, Persistenz
+├── sensors/                        # Sensorimplementierungen
+├── actuators/                      # Pumpen, Lampen, Ventile
+├── physics/                        # Physik- und Chemie-Modelle
+├── integration/                    # Gladys-Adapter
+├── api/                            # REST API und Swagger
+├── config/                         # Konfiguration und Szenarien
+├── schemas/                        # JSON-Schemas
+└── utils/                          # Validierung und Rauschgenerator
 
 tests/
-├── unit/                           # Isolated component tests
-├── property/                       # fast-check property-based tests
-├── integration/                    # Cross-component and API tests
-└── fixtures/                       # Reusable test data
+├── unit/                           # Unit-Tests
+├── property/                       # Property-based Tests
+├── integration/                    # Integrationstests
+└── fixtures/                       # Testdaten
 
-examples/                           # Default configuration and scenarios
-docs/                               # English and French documentation
-scripts/                            # Interface and coverage helper scripts
-Hydro_Model.jsx                     # Interactive dependency-model prototype
-saved-state.json                    # Example persisted state
+examples/                           # Konfiguration und Szenarien
+docs/                               # Mehrsprachige Dokumentation
+scripts/                            # Interface- und Hilfsskripte
+Hydro_Model.jsx                     # Interaktiver Visualisierungsprototyp
+saved-state.json                    # Beispiel eines gespeicherten Zustands
 ```
 
-## 8. Testing architecture
+## 11. Test-, Build- und Deployment-Architektur
 
-The test suite is organized by scope:
+Die Tests sind nach Umfang getrennt:
 
-- **Unit tests** verify individual sensors, actuators, models, utilities, and core services.
-- **Property-based tests** use `fast-check` to verify invariants across broad input ranges, such as bounded sensor values and valid state transitions.
-- **Integration tests** verify workflows spanning the core, API, configuration, persistence, and Gladys adapter.
-- **Interface scripts** exercise the running server, web pages, Swagger UI, and public API endpoints.
-
-The standard commands are:
+- Unit-Tests für einzelne Komponenten;
+- Property-based Tests mit `fast-check` für Invarianten;
+- Integrationstests für API, Kern, Persistenz und Gladys;
+- Interface-Skripte für laufende HTTP-Endpunkte und Webseiten.
 
 ```bash
 npm test
 npm run test:coverage
 npm run test:coverage:validate
-```
-
-Jest with `ts-jest` executes TypeScript tests, while `jest.config.js` defines the test and coverage configuration.
-
-## 9. Build and deployment model
-
-The project is packaged as a Node.js application:
-
-```text
-TypeScript source → tsc → dist/ → node dist/main.js
-```
-
-Development can run directly through `ts-node`:
-
-```bash
-npm run start:dev
-```
-
-Production-style execution uses the compiled output:
-
-```bash
 npm run build
 npm start
 ```
 
-The simulator is self-contained and uses JSON files for configuration, scenarios, and optional state persistence. No external database is required by the documented architecture.
+Der Build-Pfad lautet:
 
-## 10. Design principles and boundaries
+```text
+TypeScript → tsc → dist/ → node dist/main.js
+```
 
-1. **Deterministic domain behavior** — simulation calculations are separated from transport and presentation layers.
-2. **Replaceable adapters** — REST and Gladys integrations consume the same core abstractions.
-3. **Configurable realism** — noise, drift, failures, time acceleration, and physical parameters are explicit configuration concerns.
-4. **Reproducible testing** — scenarios and persisted state make complex sequences repeatable.
-5. **Validated inputs** — configuration, commands, and scenario data are checked at boundaries.
-6. **Observable execution** — event logging and API status endpoints expose what the simulator is doing.
-7. **No browser secrets** — external AI or third-party credentials should be handled server-side when the prototype advisory feature is productionized.
+## 12. Designprinzipien und Grenzen
 
-## 11. Known architectural considerations
-
-- The repository contains both the TypeScript simulator and the standalone `Hydro_Model.jsx` visualization. Their models should be kept synchronized or explicitly documented as separate representations.
-- The dashboard uses polling, which is simple and robust but may introduce latency and repeated requests under high client counts.
-- In-memory runtime state is appropriate for a test simulator; a production deployment requiring horizontal scaling would need shared state or session ownership.
-- The AI advisory prototype directly calls an external API from UI code. A production implementation should add a backend proxy, authentication, rate limiting, timeout handling, and secret management.
+1. **Trennung der Zuständigkeiten:** Domänenlogik ist von API und UI getrennt.
+2. **Deterministische Simulation:** Szenarien, Zeit und Zustand sind reproduzierbar.
+3. **Austauschbare Adapter:** REST und Gladys greifen auf denselben Simulationskern zu.
+4. **Konfigurierbare Realitätsnähe:** Rauschen, Drift, Ausfälle und Zeitbeschleunigung sind konfigurierbar.
+5. **Validierung an Grenzen:** API-, Szenario- und Konfigurationsdaten werden geprüft.
+6. **Beobachtbarkeit:** Logs und Status-Endpunkte machen die Ausführung sichtbar.
+7. **Sicherheit:** Die aktuelle API ist für Entwicklung und Tests gedacht; für Produktion sind Authentifizierung, HTTPS, Rate Limiting und sichere Dateipfade erforderlich.
+8. **Skalierung:** Der Zustand liegt im Speicher. Für horizontale Skalierung wären gemeinsamer Zustand oder ein dedizierter Simulationsbesitzer nötig.
