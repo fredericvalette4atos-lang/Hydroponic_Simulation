@@ -1,0 +1,7 @@
+# 🏥 PZP/DPA Healthcare Solution - Zero-Trust Multi-Party Verification Protocol
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![OpenAPI 3.1](https://img.shields.io/badge/OpenAPI-3.1-green.svg)](https://spec.openapis.org/oas/v3.1.0)
+[![Zero-Trust](https://img.shields.io/badge/Zero--Trust-Enabled-blue.svg)](https://en.wikipedia.org/wiki/Zero_trust_architecture)
+
+**PZP/DPA (Proof of Zero-Knowledge
